@@ -1,4 +1,6 @@
 import numpy as np
+import seaborn as sb
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from scipy import ndimage
@@ -32,38 +34,30 @@ def compare(test_id, angles, models):
     return all_probs, all_matched
 
 
-def plot_multi(models, angles, runs=1000):
+def plot_multi(names, models, angles, runs=1000):
     indices = np.random.permutation(len(X_test))[:runs]
 
-    probs_all = []
     matched_all = []
     for i, idx in enumerate(indices):
         print("Processing {}/{}".format(i, len(indices)))
         probs, matched = compare(idx, angles, models)
-        probs_all.append(probs)
         matched_all.append(matched)
 
-    probs_all = np.array(probs_all)
     matched_all = np.array(matched_all)
-
-    import seaborn as sb
-    n = len(models)
-    f, axs = sb.plt.subplots(n, sharex=True, sharey=True)
-    for i in range(n):
-        sb.boxplot(x=matched_all[:, i], ax=axs[i])
+    df = pd.DataFrame.from_items([(names[i], matched_all[:, i]) for i in range(len(names))])
+    sb.boxplot(data=df)
     plt.show()
 
 
-def plot_single(models, angles, test_id):
+def plot_single(names, models, angles, test_id):
     all_probs, all_matched = compare(test_id, angles, models)
-    for probs in all_probs:
+    legends = []
+    for i, probs in enumerate(all_probs):
         plt.plot(angles, probs)
+        legends.append('{} {:.2f}%'.format(names[i], all_matched[i]))
 
     plt.ylabel('Prediction probability of correct class')
-    plt.legend(['baseline {0:.2f}%'.format(all_matched[0]),
-                '4_rot_third {0:.2f}%'.format(all_matched[1]),
-                '8_rot_third {0:.2f}%'.format(all_matched[2])],
-               loc=9, bbox_to_anchor=(0.5, -0.05), ncol=3)
+    plt.legend(legends, loc=9, bbox_to_anchor=(0.5, -0.05), ncol=len(names))
     plt.show()
 
 
@@ -88,5 +82,5 @@ if __name__ == '__main__':
         models.append(model)
 
     angles = np.arange(0, 360, 1)
-    plot_single(models, angles=angles, test_id=5)
-    plot_multi(models, angles=angles, runs=100)
+    plot_single(names, models, angles=angles, test_id=5)
+    # plot_multi(names, models, angles=angles, runs=1000)
