@@ -1,0 +1,92 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+from scipy import ndimage
+from train import get_model
+from cifar10 import X_test, y_test
+
+from keras.layers import Convolution2D as conv_old
+from layers import Convolution2D_4 as conv_4
+from layers import Convolution2D_8 as conv_8
+
+
+def get_probs_matched(imgs, model, idx):
+    probs = model.predict_proba(imgs, verbose=0)
+    preds = probs.argmax(axis=-1)
+    probs = probs[:, y_test[idx][0]]
+    matched = (len(np.where(preds == y_test[idx][0])[0]) * 100.0) / len(imgs)
+    return probs, matched
+
+
+def compare(test_id, angles, models):
+    img = X_test[test_id]
+    imgs = np.array([ndimage.rotate(img, rot, reshape=False) for rot in angles])
+
+    all_probs = []
+    all_matched = []
+    for model in models:
+        probs, matched = get_probs_matched(imgs, model, test_id)
+        all_probs.append(probs)
+        all_matched.append(matched)
+
+    return all_probs, all_matched
+
+
+def plot_multi(models, angles, runs=1000):
+    indices = np.random.permutation(len(X_test))[:runs]
+
+    probs_all = []
+    matched_all = []
+    for i, idx in enumerate(indices):
+        print("Processing {}/{}".format(i, len(indices)))
+        probs, matched = compare(idx, angles, models)
+        probs_all.append(probs)
+        matched_all.append(matched)
+
+    probs_all = np.array(probs_all)
+    matched_all = np.array(matched_all)
+
+    import seaborn as sb
+    n = len(models)
+    f, axs = sb.plt.subplots(n, sharex=True, sharey=True)
+    for i in range(n):
+        sb.boxplot(x=matched_all[:, i], ax=axs[i])
+    plt.show()
+
+
+def plot_single(models, angles, test_id):
+    all_probs, all_matched = compare(test_id, angles, models)
+    for probs in all_probs:
+        plt.plot(angles, probs)
+
+    plt.ylabel('Prediction probability of correct class')
+    plt.legend(['baseline {0:.2f}%'.format(all_matched[0]),
+                '4_rot_third {0:.2f}%'.format(all_matched[1]),
+                '8_rot_third {0:.2f}%'.format(all_matched[2])],
+               loc=9, bbox_to_anchor=(0.5, -0.05), ncol=3)
+    plt.show()
+
+
+if __name__ == '__main__':
+    names = ['baseline', '8_rot_4', '8_rot_3', '8_rot_2', '8_rot_1', '4_rot_4', '4_rot_3', '4_rot_2', '4_rot_1']
+    convs = [
+        None,
+        [conv_8, conv_8, conv_8, conv_8],
+        [conv_old, conv_8, conv_8, conv_8],
+        [conv_old, conv_old, conv_8, conv_8],
+        [conv_old, conv_old, conv_old, conv_8],
+        [conv_4, conv_4, conv_4, conv_4],
+        [conv_old, conv_4, conv_4, conv_4],
+        [conv_old, conv_old, conv_4, conv_4],
+        [conv_old, conv_old, conv_old, conv_4],
+    ]
+
+    models = []
+    for i in range(len(names)):
+        model = get_model(convs[i])
+        model.load_weights('./weights/{}.hdf5'.format(names[i]))
+        models.append(model)
+
+    angles = np.arange(0, 360, 1)
+    plot_single(models, angles=angles, test_id=5)
+    plot_multi(models, angles=angles, runs=100)

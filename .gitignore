@@ -1,0 +1,6 @@
+# dev envs
+.idea/
+*.iml
+
+*/logs/*
+*/weights/*
