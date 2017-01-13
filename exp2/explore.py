@@ -44,7 +44,8 @@ def plot_multi(names, models, angles, runs=1000):
         matched_all.append(matched)
 
     matched_all = np.array(matched_all)
-    df = pd.DataFrame.from_items([(names[i], matched_all[:, i]) for i in range(len(names))])
+    order = np.argsort(np.mean(matched_all, axis=0))
+    df = pd.DataFrame.from_items([(names[i], matched_all[:, i]) for i in order])
     sb.boxplot(data=df)
     plt.show()
 
@@ -52,8 +53,10 @@ def plot_multi(names, models, angles, runs=1000):
 def plot_single(names, models, angles, test_id):
     all_probs, all_matched = compare(test_id, angles, models)
     legends = []
-    for i, probs in enumerate(all_probs):
-        plt.plot(angles, probs)
+
+    order = np.argsort(all_matched)
+    for i in order:
+        plt.plot(angles, all_probs[i])
         legends.append('{} {:.2f}%'.format(names[i], all_matched[i]))
 
     plt.ylabel('Prediction probability of correct class')
@@ -76,11 +79,12 @@ if __name__ == '__main__':
     ]
 
     models = []
-    for i in range(len(names)):
+    indices = range(len(names))
+    for i in indices:
         model = get_model(convs[i])
         model.load_weights('./weights/{}.hdf5'.format(names[i]))
         models.append(model)
 
     angles = np.arange(0, 360, 1)
-    plot_single(names, models, angles=angles, test_id=5)
-    # plot_multi(names, models, angles=angles, runs=1000)
+    # plot_single([names[i] for i in indices], models, angles=angles, test_id=5)
+    plot_multi(names, models, angles=angles, runs=1000)
