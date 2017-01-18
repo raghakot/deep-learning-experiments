@@ -43,4 +43,4 @@ if __name__ == '__main__':
         model.compile(loss='categorical_crossentropy',
                       optimizer='adam',
                       metrics=['accuracy'])
-        train(names[i], model)
+        train(names[i], model, nb_epoch=100)

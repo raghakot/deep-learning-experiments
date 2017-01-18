@@ -11,7 +11,7 @@ import tensorflow as tf
 
 
 # Seed for reproducibility
-seed = 1234
+seed = 1337
 np.random.seed(seed)
 tf.set_random_seed(seed)
 
