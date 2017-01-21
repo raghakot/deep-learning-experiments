@@ -17,7 +17,7 @@ tf.set_random_seed(seed)
 
 # callbacks
 early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-4)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-6)
 
 # The data, shuffled and split between train and test sets:
 (X_train, y_train), (X_test, y_test) = cifar10.load_data()
