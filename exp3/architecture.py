@@ -22,10 +22,12 @@ class Connection(Layer):
         return [tf.image.resize_bilinear(x, [rows, cols]) for x in inputs]
 
     def _merge(self, inputs):
+        """Define other merge ops like [+, X, avg] here.
+        """
         if self.merge_mode == 'concat':
             return merge(inputs, mode=self.merge_mode, concat_axis=-1)
         else:
-            raise Exception('mode {} is invalid'.format(self.merge_mode))
+            raise RuntimeError('mode {} is invalid'.format(self.merge_mode))
 
     def build(self, input_shape):
         # Create a trainable weight variable for this connection
