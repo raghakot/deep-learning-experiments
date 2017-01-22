@@ -50,5 +50,5 @@ if __name__ == '__main__':
         model.compile(loss='categorical_crossentropy',
                       optimizer='adam',
                       metrics=['accuracy'])
-        train(names[i], callbacks, model, nb_epoch=200)
+        train(names[i], model, callbacks, nb_epoch=200)
         print('-' * 20)
