@@ -20,6 +20,11 @@ Code for reproducing results posted on my [blog](http://raghakot.github.io/).
 * Run in `exp2/train.py`
 * Use `exp2/explore.py` to generate plots.
 
+### [Towards Differentiable Neural Architecture](https://raghakot.github.io/2017/01/14/Towards-Differentiable-Neural-Architecture.html)
+
+* Run in `exp3/train.py`
+* Still a work in progress. Check back for updates.
+
 ## Collaboration
 
 If you end up building on this work or using the code, please contact me to add me as a collaborator. I hope someone 
