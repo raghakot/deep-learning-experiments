@@ -17,15 +17,10 @@ class Connection(Layer):
     def _ensure_same_size(self, inputs):
         """Ensures that all inputs match last input size.
         """
-
-        # Assuming that the last one has the smallest size.
-        nb_batch, row, col, ch = K.int_shape(inputs[-1])
-
-        # Resize all inputs[:-1] to match last layer shape.
-        # Optimization to avoid resizing last layer.
-        resized_inputs = [tf.image.resize_bilinear(x, [row, col]) for x in inputs[:-1]]
-        resized_inputs.append(inputs[-1])
-        return resized_inputs
+        # Find min (row, col) value and resize all inputs to that value.
+        rows = min([K.int_shape(x)[1] for x in inputs])
+        cols = min([K.int_shape(x)[2] for x in inputs])
+        return [tf.image.resize_bilinear(x, [rows, cols]) for x in inputs]
 
     def build(self, input_shape):
         # Create a trainable weight variable for this connection
@@ -34,9 +29,16 @@ class Connection(Layer):
         super(Connection, self).build(input_shape)
 
     def call(self, layer_inputs, mask=None):
+        # Resize all inputs to same size.
         resized_inputs = self._ensure_same_size(layer_inputs)
-        weighted_inputs = [resized_inputs[i] * self.W[i] for i in range(self.nb_layer_inputs)]
+
+        # Compute sigmoid weighted inputs
+        weighted_inputs = [resized_inputs[i] * K.sigmoid(self.W[i]) for i in range(self.nb_layer_inputs)]
+
+        # Merge according to provided merge strategy.
         merged = merge(weighted_inputs, mode=self.merge_mode, concat_axis=-1)
+
+        # Cache this for use in `get_output_shape_for`
         self._out_shape = K.int_shape(merged)
         return merged
 
