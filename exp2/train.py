@@ -4,6 +4,8 @@ from __future__ import print_function
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, MaxPooling2D
 from keras.layers import Convolution2D as conv_old
+from keras.callbacks import EarlyStopping
+
 from layers import Convolution2D_4 as conv_4
 from layers import Convolution2D_8 as conv_8
 from cifar10 import train
@@ -39,6 +41,7 @@ if __name__ == '__main__':
     shutil.rmtree('weights', ignore_errors=True)
     os.makedirs('weights')
 
+    callbacks = [EarlyStopping(monitor='val_loss', patience=10, verbose=1)]
     names = ['baseline', '8_rot_4', '8_rot_3', '8_rot_2', '8_rot_1', '4_rot_4', '4_rot_3', '4_rot_2', '4_rot_1']
     convs = [
         None,
@@ -57,5 +60,5 @@ if __name__ == '__main__':
         model.compile(loss='categorical_crossentropy',
                       optimizer='adam',
                       metrics=['accuracy'])
-        train(names[i], model, nb_epoch=200)
+        train(names[i], model, callbacks, nb_epoch=200)
         print('-' * 20)

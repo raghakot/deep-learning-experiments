@@ -3,6 +3,7 @@ from __future__ import print_function
 
 from keras.models import Sequential
 from keras.layers import Dropout, Flatten, MaxPooling2D
+from keras.callbacks import EarlyStopping
 
 from keras.layers import Dense as dense_old
 from layers import DenseNew as dense_new
@@ -39,6 +40,7 @@ if __name__ == '__main__':
     shutil.rmtree('weights', ignore_errors=True)
     os.makedirs('weights')
 
+    callbacks = [EarlyStopping(monitor='val_loss', patience=10, verbose=1)]
     names = ['baseline', 'norm_conv', 'norm_dense', 'norm_conv_dense']
     conv_dense_list = [(conv_old, dense_old), (conv_new, dense_old), (conv_old, dense_new), (conv_new, dense_new)]
 
@@ -48,4 +50,5 @@ if __name__ == '__main__':
         model.compile(loss='categorical_crossentropy',
                       optimizer='adam',
                       metrics=['accuracy'])
-        train(names[i], model, nb_epoch=200)
+        train(names[i], callbacks, model, nb_epoch=200)
+        print('-' * 20)
