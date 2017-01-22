@@ -8,10 +8,9 @@ from keras.layers import merge, Lambda, Layer
 class Connection(Layer):
     """Takes a list of inputs, resizes them to the same shape, and outputs a weighted merge.
     """
-    def __init__(self, nb_layer_inputs, init_value=0.5, merge_mode='concat', **kwargs):
+    def __init__(self, init_value=0.5, merge_mode='concat', **kwargs):
         self.init_value = init_value
         self.merge_mode = merge_mode
-        self.nb_layer_inputs = nb_layer_inputs
         super(Connection, self).__init__(**kwargs)
 
     def _ensure_same_size(self, inputs):
@@ -22,9 +21,15 @@ class Connection(Layer):
         cols = min([K.int_shape(x)[2] for x in inputs])
         return [tf.image.resize_bilinear(x, [rows, cols]) for x in inputs]
 
+    def _merge(self, inputs):
+        if self.merge_mode == 'concat':
+            return merge(inputs, mode=self.merge_mode, concat_axis=-1)
+        else:
+            raise Exception('mode {} is invalid'.format(self.merge_mode))
+
     def build(self, input_shape):
         # Create a trainable weight variable for this connection
-        self.W = [K.variable(np.ones(shape=1) * self.init_value) for _ in range(self.nb_layer_inputs)]
+        self.W = [K.variable(np.ones(shape=1) * self.init_value) for _ in range(len(input_shape))]
         self._trainable_weights.extend(self.W)
         super(Connection, self).build(input_shape)
 
@@ -33,10 +38,10 @@ class Connection(Layer):
         resized_inputs = self._ensure_same_size(layer_inputs)
 
         # Compute sigmoid weighted inputs
-        weighted_inputs = [resized_inputs[i] * K.sigmoid(self.W[i]) for i in range(self.nb_layer_inputs)]
+        weighted_inputs = [resized_inputs[i] * K.sigmoid(self.W[i]) for i in range(len(layer_inputs))]
 
         # Merge according to provided merge strategy.
-        merged = merge(weighted_inputs, mode=self.merge_mode, concat_axis=-1)
+        merged = self._merge(weighted_inputs)
 
         # Cache this for use in `get_output_shape_for`
         self._out_shape = K.int_shape(merged)
@@ -53,7 +58,7 @@ def get_fully_connected(x, layers, connection_weight_init=1., connection_merge_m
     for layer in layers:
         x = layer(x)
         inputs.append(x)
-        x = Connection(len(inputs), init_value=connection_weight_init, merge_mode=connection_merge_mode)(inputs)
+        x = Connection(connection_weight_init, connection_merge_mode)(inputs)
     return x
 
 
