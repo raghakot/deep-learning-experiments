@@ -116,7 +116,7 @@ if __name__ == '__main__':
         model.compile(loss='categorical_crossentropy',
                       optimizer='adam',
                       metrics=['accuracy'])
-        train(names[i], model, callbacks, nb_epoch=2)
+        train(names[i], model, callbacks, nb_epoch=200)
         print('-' * 20)
 
         if not is_baseline:
