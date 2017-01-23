@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import numpy as np
+
 from keras.models import Model
 from keras.layers import Dropout, MaxPooling2D, Dense, Input
 from keras.layers import Convolution2D
@@ -11,7 +13,7 @@ from utils import ModelLogger
 from collections import defaultdict
 
 
-def get_model(connection_weight_init=1., connection_merge_mode='concat'):
+def get_model(**connection_params):
     layers = [
         Convolution2D(32, 3, 3, border_mode='same', activation='relu', bias=False),
         Convolution2D(32, 3, 3, bias=False, activation='relu'),
@@ -27,10 +29,10 @@ def get_model(connection_weight_init=1., connection_merge_mode='concat'):
     x = Input((32, 32, 3))
 
     # Interpret this as requesting for a regular sequential model
-    if connection_weight_init is None:
+    if len(connection_params) == 0:
         out = get_sequential(x, layers)
     else:
-        out = get_fully_connected(x, layers, connection_weight_init, connection_merge_mode)
+        out = get_fully_connected(x, layers, **connection_params)
 
     # Complete the rest of the network with Dense layers.
     out = flatten(out)
@@ -40,8 +42,8 @@ def get_model(connection_weight_init=1., connection_merge_mode='concat'):
     return Model(input=x, output=out)
 
 
-def visualize_model():
-    model = get_model()
+def visualize_model(**connection_params):
+    model = get_model(**connection_params)
 
     from keras.utils.visualize_util import model_to_dot
     dot = model_to_dot(model, show_shapes=True)
@@ -49,17 +51,17 @@ def visualize_model():
     dot.write('model.png', format='png')
 
 
-def get_logging_callback():
+def get_logging_callback(shared_weights=False):
     """Creates callback to log connection weights and returns the history.
     """
     history = defaultdict(list)
 
     def log_lambda(layer, idx):
-        w = sigmoid(layer.get_weights())
-        history[idx].append(w)
-        print('-' * 20)
-        print('{}:{}'.format(type(layer).__name__, idx))
-        print(w)
+        w = np.squeeze(np.array(layer.get_weights()))
+        # Collapse all same feature weights into one value
+        if shared_weights:
+            w = np.unique(w)
+        history[idx].append(sigmoid(w))
 
     connection_weight_logger = ModelLogger.get_logger(Connection, log_lambda)
     return ModelLogger([connection_weight_logger]), history
@@ -75,9 +77,9 @@ def plot_weight_history(dir, history):
         fig = sb.plt.figure()
         ax = sb.plt.subplot(111)
 
-        fig.suptitle("Connection_{} Weights".format(idx))
-        ax.set_xlabel('Epochs')
-        ax.set_ylabel("Sigmoid(W)")
+        fig.suptitle("Connection_{} Weights".format(idx + 1), fontsize=16, fontweight='bold')
+        ax.set_xlabel('Epochs', fontsize=14)
+        ax.set_ylabel("Sigmoid(W)", fontsize=14)
 
         w = np.array(history[idx])
         for i in range(w.shape[1]):
@@ -97,14 +99,12 @@ if __name__ == '__main__':
     shutil.rmtree('plots', ignore_errors=True)
     os.makedirs('plots')
 
-    # names = ['fc_sum', 'fc_max', 'fc_iave', 'baseline']
-    # params = [(1., 'sum'), (1., 'max'), (1., 'ave'), (None, None)]
-    names = ['fc_bilinear']
-    params = [(1., 'concat')]
+    names = ['fc_nonshared_concat']
+    params = [{'shared_weights': False}]
 
     for i in range(len(names)):
         # Connection weight history is not valid for baseline model.
-        is_baseline = params[i][0] is None
+        is_baseline = len(params[i]) == 0
         if is_baseline:
             callbacks = []
             history = None
@@ -112,11 +112,11 @@ if __name__ == '__main__':
             logging_callback, history = get_logging_callback()
             callbacks = [logging_callback]
 
-        model = get_model(*params[i])
+        model = get_model(**params[i])
         model.compile(loss='categorical_crossentropy',
                       optimizer='adam',
                       metrics=['accuracy'])
-        train(names[i], model, callbacks, nb_epoch=200)
+        train(names[i], model, callbacks, nb_epoch=2)
         print('-' * 20)
 
         if not is_baseline:
