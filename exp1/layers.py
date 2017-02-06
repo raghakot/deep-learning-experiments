@@ -1,5 +1,4 @@
 from keras.layers.convolutional import Convolution2D
-from keras.layers import Dense
 from keras import backend as K
 import tensorflow as tf
 
@@ -23,14 +22,3 @@ class Convolution2DNew(Convolution2D):
                 raise ValueError('Invalid dim_ordering:', self.dim_ordering)
         output = self.activation(output)
         return output
-
-
-class DenseNew(Dense):
-    def call(self, x, mask=None):
-        # 1e-8 is used to prevent division by 0
-        W_norm = self.W / (tf.sqrt(tf.reduce_sum(tf.square(self.W), axis=0, keep_dims=True)) + 1e-8)
-
-        output = K.dot(x, W_norm)
-        if self.bias:
-            output += self.b
-        return self.activation(output)
