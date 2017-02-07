@@ -4,7 +4,6 @@ from __future__ import print_function
 from keras.models import Model
 from keras.layers import Dropout, GlobalAveragePooling2D, Activation, Input, MaxPooling2D
 
-from keras.optimizers import Adam
 from keras.layers import Convolution2D as conv_old
 from layers import Convolution2DNew as conv_new
 from cifar10 import train
@@ -45,12 +44,11 @@ if __name__ == '__main__':
 
     names = ['baseline', 'norm_conv']
     convs = [conv_old, conv_new]
-    opt = Adam(1e-4)
 
     for i in range(len(names)):
         model = get_model(convs[i])
         model.compile(loss='categorical_crossentropy',
-                      optimizer=opt,
+                      optimizer='adam',
                       metrics=['accuracy'])
         train(names[i], model, nb_epoch=250, batch_size=64)
         print('-' * 20)

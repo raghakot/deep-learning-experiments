@@ -23,8 +23,13 @@ Y_test = np_utils.to_categorical(y_test, 10)
 
 X_train = X_train.astype('float32')
 X_test = X_test.astype('float32')
-X_train /= 255
-X_test /= 255
+
+# subtract mean and normalize
+mean_image = np.mean(X_train, axis=0)
+X_train -= mean_image
+X_test -= mean_image
+X_train /= 128.
+X_test /= 128.
 
 
 def train(name, model, callbacks=None, batch_size=32, nb_epoch=200):
