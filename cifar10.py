@@ -27,13 +27,13 @@ X_train /= 255
 X_test /= 255
 
 
-def train(name, model, callbacks, batch_size=32, nb_epoch=50):
+def train(name, model, callbacks=None, batch_size=32, nb_epoch=200):
     """Common cifar10 training code.
     """
     callbacks = callbacks or []
     tb = TensorBoard(log_dir='./logs/{}'.format(name))
     model_checkpoint = ModelCheckpoint('./weights/{}.hdf5'.format(name), monitor='val_loss', save_best_only=True)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=8, min_lr=1e-6)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-7)
     callbacks.extend([reduce_lr, tb, model_checkpoint])
 
     print("Training {}".format(name))
