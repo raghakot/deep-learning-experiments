@@ -45,9 +45,9 @@ def train(name, model, callbacks=None, batch_size=32, nb_epoch=200):
         featurewise_std_normalization=False,  # divide inputs by std of the dataset
         samplewise_std_normalization=False,  # divide each input by its std
         zca_whitening=False,  # apply ZCA whitening
-        rotation_range=10,  # randomly rotate images in the range (degrees, 0 to 180)
-        width_shift_range=0.2,  # randomly shift images horizontally (fraction of total width)
-        height_shift_range=0.2,  # randomly shift images vertically (fraction of total height)
+        rotation_range=0,  # randomly rotate images in the range (degrees, 0 to 180)
+        width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
+        height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
         horizontal_flip=True,  # randomly flip images
         vertical_flip=False)  # randomly flip images
 
