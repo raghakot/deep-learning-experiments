@@ -1,39 +1,38 @@
 from __future__ import print_function
 
+from keras.models import Sequential
+from keras.layers import Dropout, Flatten, MaxPooling2D
 
-from keras.models import Model
-from keras.layers import Dropout, GlobalAveragePooling2D, Activation, Input, MaxPooling2D
-
+from keras.layers import Dense as dense_old
+from layers import DenseNew as dense_new
 from keras.layers import Convolution2D as conv_old
 from layers import Convolution2DNew as conv_new
+
 from cifar10 import train
 
 
-def get_model(conv=conv_old):
+def get_model(conv=conv_old, dense=dense_old):
     """ Builds an all CNN model with provided conv implementation.
     Using MaxPooling instead of striding conv to save on params.
     """
-    inp = Input(shape=(32, 32, 3))
-    x = inp
+    model = Sequential()
+    model.add(conv(32, 3, 3, border_mode='same', activation='relu',
+                   bias=False, input_shape=(32, 32, 3)))
+    model.add(conv(32, 3, 3, bias=False, activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
 
-    x = Dropout(0.2)(x)
-    x = conv(96, 3, 3, border_mode='same', activation='relu')(x)
-    x = conv(96, 3, 3, border_mode='same', activation='relu')(x)
-    x = MaxPooling2D()(x)
-    x = Dropout(0.5)(x)
+    model.add(conv(64, 3, 3, bias=False, activation='relu', border_mode='same'))
+    model.add(conv(64, 3, 3, bias=False, activation='relu'))
 
-    x = conv(192, 3, 3, border_mode='same', activation='relu')(x)
-    x = conv(192, 3, 3, border_mode='same', activation='relu')(x)
-    x = MaxPooling2D()(x)
-    x = Dropout(0.5)(x)
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
 
-    x = conv(192, 3, 3, border_mode='same', activation='relu')(x)
-    x = conv(192, 1, 1, border_mode='same', activation='relu')(x)
-    x = conv(10, 1, 1, border_mode='same', activation='relu')(x)
-
-    x = GlobalAveragePooling2D()(x)
-    x = Activation('softmax')(x)
-    return Model(input=inp, output=x)
+    model.add(Flatten())
+    model.add(dense(512, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(dense(10, activation='softmax'))
+    return model
 
 
 if __name__ == '__main__':
@@ -42,13 +41,14 @@ if __name__ == '__main__':
     shutil.rmtree('weights', ignore_errors=True)
     os.makedirs('weights')
 
-    names = ['baseline', 'norm_conv']
-    convs = [conv_old, conv_new]
+    names = ['baseline', 'norm_conv', 'norm_dense', 'norm_conv_dense']
+    conv_dense_list = [(conv_old, dense_old), (conv_new, dense_old), (conv_old, dense_new), (conv_new, dense_new)]
 
     for i in range(len(names)):
-        model = get_model(convs[i])
+        conv, dense = conv_dense_list[i]
+        model = get_model(conv, dense)
         model.compile(loss='categorical_crossentropy',
                       optimizer='adam',
                       metrics=['accuracy'])
-        train(names[i], model, nb_epoch=250, batch_size=64)
+        train(names[i], model, nb_epoch=200)
         print('-' * 20)
